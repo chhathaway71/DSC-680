@@ -1,2 +1,2 @@
 # DSC-680
-Compilation of Projects
+Three Projects for final course
