@@ -1,0 +1,404 @@
+---
+title: "DSC 680 Project 1 R"
+author: "Christine Hathaway"
+date: "March 19, 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r include = TRUE}
+#Set the working directory
+setwd("C:/Users/Christine/Documents/Bellevue/DSC 680/Project 1")
+```
+
+
+```{r include = FALSE}
+#Install packages needed for file
+library(ggplot2)
+library("plyr")
+library(pastecs)
+```
+
+Import data from file
+
+```{r echo = TRUE }
+#Import file
+flu <- read.csv(file = "C:/Users/Christine/Documents/Bellevue/DSC 680/Project 1/fluprint_export.csv", header = TRUE, na.strings = " ")
+```
+
+Display first five records of file
+
+```{r echo = TRUE }
+head(flu)
+```
+
+Run stat.desc() function of file
+
+```{r echo = TRUE }
+stat.desc(flu)
+```
+
+
+Run str() function of file
+
+```{r echo = TRUE }
+str(flu)
+```
+
+Count each variable
+
+```{r echo = TRUE}
+sapply(flu, function(x) length(unique(x)))
+
+```
+
+Unique values of variable "subset"
+
+``` {r echo = TRUE}
+table(flu$subset)
+
+```
+
+Unique values of variable "data"
+
+``` {r echo = TRUE}
+table(flu$data)
+
+```
+
+Create categorical variables for analysis
+Variable are already factored, don't need this section
+
+```{r echo = TRUE }
+
+flu$Gender <- factor(flu$gender)
+
+flu$Vaccine <- factor(flu$vaccine)
+
+flu$Vaccine_Response <- factor(flu$vaccine_response)
+
+flu$Influenza_Infection <- factor(flu$influenza_infection_history)
+
+flu$Influenza_Hospitalization <- factor(flu$influenza_hospitalization)
+
+flu$subtest <- factor(flu$subset)
+
+head(flu)
+
+```
+
+Import data from file
+
+```{r echo = TRUE }
+#Import file
+result <- read.csv(file = "C:/Users/Christine/Documents/Bellevue/DSC 680/Project 1/result_flu.csv", header = TRUE, na.strings = " ")
+```
+
+Display first five records of file
+
+```{r echo = TRUE }
+head(result)
+```
+
+Create categorical variables for analysis
+Variable are already factored, don't need this section
+
+```{r echo = TRUE }
+
+result$Gender <- factor(result$gender)
+
+result$Race <- factor(result$race)
+
+result$Vaccine <- factor(result$vaccine)
+
+result$Vaccine_Response <- factor(result$vaccine_response)
+
+result$Influenza_Infection <- factor(result$influenza_infection_history)
+
+result$Influenza_Hospitalization <- factor(result$influenza_hospitalization)
+
+```
+
+Scatterplot
+
+``` {r echo = TRUE}
+ggplot(flu, aes(x=data, y=vaccine_response)) + geom_point() + ggtitle("Data Value by Vaccine Response Type") +
+  xlab("Data Values") + ylab("Vaccine Response")
+
+```
+
+``` {r echo = TRUE}
+ggplot(flu, aes(x=subset, y=vaccine_response)) + geom_point()+ ggtitle("Test Types by Vaccine Response Type") +
+  xlab("Test Type") + ylab("Vaccine Response")
+
+```
+
+Histograms
+
+``` {r echo = TRUE}
+ggplot(flu, aes(x=subset)) + geom_bar()+ ggtitle("Count of Various Test Types") +
+  xlab("Test Types")
+
+```
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=Gender)) + geom_bar()+ ggtitle("Donors by Gender") +
+  xlab("Gender")
+
+```
+
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=Race)) + geom_bar()+ ggtitle("Donors by Race") +
+  xlab("Race")
+
+```
+
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=visit_age)) + geom_bar()+facet_wrap(~Vaccine_Response) + ggtitle("Donor Age by Vaccine Response") +
+  xlab("Age")
+
+```
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=Gender)) + geom_bar()+facet_wrap(~Vaccine_Response)+ ggtitle("Gender by Vaccine Response Type") +
+  xlab("Gender")
+
+```
+
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=visit_age)) + geom_bar() + ggtitle("Age Distribution") +
+  xlab("Age")
+
+```
+
+
+Histograms
+
+``` {r echo = TRUE}
+ggplot(result, aes(x=Vaccine_Response)) + geom_bar() + ggtitle("Vaccine Response Distribution") +
+  xlab("Response")
+
+```
+
+
+
+Create regression model for influenze infection based on vaccine type
+
+```{r echo = TRUE }
+model1 <- glm(Influenza_Infection~Vaccine+Gender+visit_age+Race, data = result, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model1)
+
+```
+
+Create regression model for vaccine response based on vaccine type
+
+```{r echo = TRUE }
+model2 <- glm(Vaccine_Response~Vaccine+Gender+visit_age+Race, data = result, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model2)
+
+```
+
+
+Create regression model for influenze infection based on donor factors
+
+```{r echo = TRUE }
+model12 <- glm(Influenza_Infection~Gender+visit_age+Race + bmi + statin_use, data = result, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model12)
+
+```
+
+Create regression model for vaccine response based on donor factors
+
+```{r echo = TRUE }
+model13 <- glm(Vaccine_Response~Gender+visit_age+Race + bmi + statin_use, data = result, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model13)
+
+```
+
+
+Regression model showing correlation between data values and vaccine response is significant
+
+```{r echo = TRUE }
+#Too big to run
+model3 <- glm(vaccine_response~ data +gender+visit_age+race, data = flu, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model3)
+
+```
+
+Names of tests with most frequent count of high vaccine response
+
+``` {r echo = TRUE}
+fluyes <- subset(flu, flu$vaccine_response == 1)
+#head(fluyes)
+rank <- sort(table(fluyes$name), decreasing = T)
+head(rank)
+
+```
+
+
+Create subset of data based on CD8+ T cells
+
+```{r echo = TRUE }
+tcell8 <- subset(flu, name == 'CD8+ T cells')
+head(tcell8)
+str(tcell8)
+```
+
+
+Create regression model for vaccine response based on Test CD8+ T cells
+
+```{r echo = TRUE }
+
+model5 <- glm(vaccine_response~ data +gender+visit_age+race, data = tcell8, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model5)
+
+```
+
+Create subset of data based on CD4+ T cells
+
+```{r echo = TRUE }
+tcell4 <- subset(flu, name == 'CD4+ T cells')
+head(tcell4)
+str(tcell4)
+```
+
+
+Create regression model for vaccine response based on Test CD4+ T cells 
+
+```{r echo = TRUE }
+
+model6 <- glm(vaccine_response~ data +gender+visit_age+race, data = tcell4, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model6)
+
+```
+
+Create subset of data based on Tcells
+
+```{r echo = TRUE }
+tcell <- subset(flu, name == 'T cells')
+head(tcell)
+str(tcell)
+```
+
+
+Create regression model for vaccine response based on Test Tcells 
+
+```{r echo = TRUE }
+
+model7 <- glm(vaccine_response~ data +gender+visit_age+race, data = tcell, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model7)
+
+```
+
+Create subset of data based on B Cells
+
+```{r echo = TRUE }
+bcells <- subset(flu, name == 'B cells')
+head(bcells)
+str(bcells)
+```
+
+
+Create regression model for vaccine response based on Test Bcells 
+
+```{r echo = TRUE }
+
+model8 <- glm(vaccine_response~ data +gender+visit_age+race, data = bcells, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model8)
+
+```
+
+Create subset of data based on NK cells
+
+```{r echo = TRUE }
+nkcell <- subset(flu, name == 'NK cells')
+head(nkcell)
+str(nkcell)
+```
+
+
+Create regression model for vaccine response based on Test NK cells 
+
+```{r echo = TRUE }
+
+model9 <- glm(vaccine_response~ data +gender+visit_age+race, data = nkcell, family = "binomial")
+
+```
+
+
+Output model results
+
+```{r echo = TRUE }
+summary(model9)
+
+```
+
