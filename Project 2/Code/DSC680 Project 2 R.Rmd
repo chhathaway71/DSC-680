@@ -1,0 +1,270 @@
+---
+title: "DSC 680 Project 2 R Code"
+author: "Christine Hathaway"
+date: "April 17, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include = TRUE}
+#Set the working directory
+setwd("C:/Users/Christine/Documents/Bellevue/DSC 680/Project 2")
+```
+
+
+```{r include = FALSE}
+#Install packages needed for file
+library(ggplot2)
+library("plyr")
+library(pastecs)
+library(psych)
+library("Hmisc")
+library("caret")
+library(dplyr)
+```
+
+Import data from file
+
+```{r echo = TRUE }
+#Import file
+df <- read.csv(file = "C:/Users/Christine/Documents/Bellevue/DSC 680/Project 2/parkinsons.csv", header = TRUE)
+```
+
+
+Display first five records of file
+
+```{r echo = TRUE }
+head(df)
+```
+
+
+Run str() function of file
+
+```{r echo = TRUE }
+str(df)
+```
+
+Count each variable
+
+```{r echo = TRUE}
+sapply(df, function(x) length(unique(x)))
+
+```
+
+Run desribe() function of file
+
+```{r echo = TRUE }
+describe(df)
+```
+
+Run stat.desc() function of file
+
+```{r echo = TRUE }
+stat.desc(df)
+```
+
+Create graphs of fundamental frequencies
+
+```{r echo = TRUE}
+ggplot(df, aes(x=MDVP.Fo.Hz.)) + geom_histogram() + ggtitle("Average vocal fundamental frequency")
+ggplot(df, aes(x=MDVP.Fhi.Hz.)) + geom_histogram() + ggtitle("Maximum vocal fundamental frequency")
+ggplot(df, aes(x=MDVP.Flo.Hz.)) + geom_histogram() + ggtitle("Minimum vocal fundamental frequency")
+
+```
+
+
+Create graphs of measures of variation in fundamental frequencies
+
+```{r echo = TRUE}
+ggplot(df, aes(x=MDVP.Jitter...)) + geom_histogram() + ggtitle("MDVP jitter in percentage")
+ggplot(df, aes(x=MDVP.Jitter.Abs.)) + geom_histogram() + ggtitle("MDVP absolute jitter in ms")
+ggplot(df, aes(x=MDVP.RAP)) + geom_histogram() + ggtitle("MDVP relative amplitude perturbation")
+ggplot(df, aes(x=MDVP.PPQ )) + geom_histogram() + ggtitle("MDVP five-point period perturbation quotient")
+ggplot(df, aes(x=Jitter.DDP )) + geom_histogram() + ggtitle("Average absolute difference of differences between jitter cycles")
+
+```
+
+Create graphs of measures of variation in amplitude
+
+```{r echo = TRUE}
+ggplot(df, aes(x=MDVP.Shimmer)) + geom_histogram() + ggtitle("MDVP local shimmer")
+ggplot(df, aes(x=MDVP.Shimmer.dB.)) + geom_histogram() + ggtitle("MDVP local shimmer in dB")
+ggplot(df, aes(x=Shimmer.APQ3)) + geom_histogram() + ggtitle("Three-point amplitude perturbation quotient")
+ggplot(df, aes(x=Shimmer.APQ5)) + geom_histogram() + ggtitle("Five-point amplitude perturbation quotient")
+ggplot(df, aes(x=MDVP.APQ)) + geom_histogram() + ggtitle("MDVP 11-point amplitude perturbation quotient")
+ggplot(df, aes(x=Shimmer.DDA)) + geom_histogram() + ggtitle("Average absolute differences between the amplitudes of consecutive periods")
+
+```
+
+Create graphs of measures of ratio of noise to tonal components in the voice
+
+```{r echo = TRUE}
+ggplot(df, aes(x=NHR)) + geom_histogram() + ggtitle("Noise-to-harmonics ratio")
+ggplot(df, aes(x=HNR)) + geom_histogram() + ggtitle("Harmonics-to-noise ratio")
+
+```
+
+Create graphs of nonlinear dynamical complexity measures
+
+```{r echo = TRUE}
+ggplot(df, aes(x=RPDE)) + geom_histogram() + ggtitle("Recurrence period density entropy measure")
+ggplot(df, aes(x=D2 )) + geom_histogram() + ggtitle("Correlation dimension")
+
+```
+
+Create graphs of nonlinear dynamical complexity measures
+
+```{r echo = TRUE}
+ggplot(df, aes(x=spread1)) + geom_histogram() + ggtitle("Nonlinear measures of fundamental frequency variation")
+ggplot(df, aes(x=spread2)) + geom_histogram() + ggtitle("Nonlinear measures of fundamental frequency variation")
+ggplot(df, aes(x=PPE)) + geom_histogram() + ggtitle("Pitch period entropy")
+
+
+```
+
+Create graphs of Parkinson's status and signal fractal scaling exponent
+
+```{r echo = TRUE}
+ggplot(df, aes(x=status)) + geom_histogram() + ggtitle("Health status of the subject (one) - Parkinson's, (zero) - healthy")
+ggplot(df, aes(x=DFA)) + geom_histogram() + ggtitle("Signal fractal scaling exponent")
+
+```
+
+
+Create Training and Testing Datasets
+
+```{r echo = TRUE }
+#create a list of random number ranging from 1 to number of rows from actual data and 70% of the data into training data  
+
+data = sort(sample(nrow(df), nrow(df)*.7))
+
+#creating training data set by selecting the output row values  
+train<-df[data,]
+
+#creating test data set by not selecting the output row values
+test<-df[-data,]
+
+```
+
+
+Create regression model
+
+```{r echo = TRUE }
+model <- glm(status ~ NHR, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model)
+
+```
+
+Make predictions
+
+```{r echo = TRUE }
+#Make predictions
+predict <- model %>% predict(test, type = "terms")
+
+head(predict)
+
+summary(predict)
+```
+
+Create regression model using all variables
+
+```{r echo = TRUE }
+model2 <- glm(status ~ MDVP.Fo.Hz.+MDVP.Flo.Hz.+MDVP.Jitter...+MDVP.Jitter.Abs.+MDVP.RAP + MDVP.PPQ + Jitter.DDP+ MDVP.Shimmer+ MDVP.Shimmer.dB.+Shimmer.APQ3 + Shimmer.APQ5 + MDVP.APQ +Shimmer.DDA +NHR+HNR+RPDE+ DFA+ spread1 + spread2 + D2 + PPE, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model2)
+
+```
+
+Make predictions
+
+```{r echo = TRUE }
+#Make predictions
+predict <- model %>% predict(test, type = "terms")
+
+head(predict)
+
+summary(predict)
+```
+
+
+
+Create regression model using vocal fundamental frequency variables
+
+```{r echo = TRUE }
+model3 <- glm(status ~ MDVP.Fo.Hz.+MDVP.Flo.Hz.+MDVP.Jitter...+MDVP.Jitter.Abs.+MDVP.RAP+ MDVP.PPQ + Jitter.DDP+ MDVP.Shimmer+ MDVP.Shimmer.dB.+Shimmer.APQ3, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model3)
+
+```
+
+
+Create regression model using vocal fundamental frequency variables
+
+```{r echo = TRUE }
+model4 <- glm(status ~ Shimmer.DDA + HNR + NHR + DFA+RPDE+ spread1 + spread2 + D2 + PPE, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model4)
+
+```
+
+Create regression model using vocal fundamental frequency variables
+
+```{r echo = TRUE }
+model5 <- glm(status ~  Shimmer.APQ5 +MDVP.APQ, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(model5)
+
+```
+Based on XGBoost restuls in Python
+
+```{r echo = TRUE }
+modeltest <- glm(status ~   MDVP.Fo.Hz.+MDVP.Fhi.Hz.+Shimmer.APQ5+ spread1+ PPE, data = train, family = "binomial")
+
+```
+
+Output model results
+
+```{r echo = TRUE }
+summary(modeltest)
+
+```
+
+Make predictions
+
+```{r echo = TRUE }
+#Make predictions
+predict <- modeltest %>% predict(test, type = "terms")
+
+head(predict)
+
+summary(predict)
+```
