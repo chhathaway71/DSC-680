@@ -1,4 +1,4 @@
-#DSC-680 Project 2 Predictors for Parkinson's Disease
+# DSC-680 Project 2 Predictors for Parkinson's Disease
 
 ## Description
 
