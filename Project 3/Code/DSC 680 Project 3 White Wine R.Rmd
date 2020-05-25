@@ -1,0 +1,275 @@
+---
+title: "DSC 680 Project 3 White Wine R"
+author: "Christine Hathaway"
+date: "May 10, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include = TRUE}
+#Set the working directory
+setwd("C:/Users/Christine/Documents/Bellevue/DSC 680/Project 3")
+```
+
+```{r include = FALSE}
+#Install packages needed for file
+library(ggplot2)
+library("plyr")
+library(pastecs)
+library(psych)
+library("Hmisc")
+library("caret")
+library(dplyr)
+library(gridExtra)
+library(grid)
+library(corrplot)
+library(caTools)
+```
+
+Import data from file
+
+```{r}
+# Read data to ww dataframe
+# row.names = 1 to avoid an index column creation upon dataset reading into a dataframe
+ww <- read.csv('C:/Users/Christine/Documents/Bellevue/DSC 680/Project 3/winequality-white.csv', sep = ';')
+
+```
+
+Display first five records of file
+
+```{r echo = TRUE }
+head(ww)
+```
+
+
+Find dimensions of ww dataframe
+
+```{r}
+dim(ww)
+```
+
+List ww dataframe's column names, types and a subset of values
+
+```{r}
+str(ww)
+```
+
+
+Display summary statistics for each variable
+
+```{r}
+summary(ww)
+```
+
+Check how many missing values (NA) are in each column/variable, sum them up per column
+
+```{r}
+colSums(is.na(ww))
+```
+
+
+```{r}
+# Draw a histogram for a given dataframe and variable
+# Use deparse() and substitute() functions to decode column name from 
+# a variable passed as an argument to the function, to be displayed
+# on x axis (xlab())
+draw_hist <- function(dataframe, variable)
+{
+  # Save histogram definition to the plot variable
+  plot <- ggplot(data = dataframe, aes(x = variable)) + 
+           geom_histogram(color = 'black', fill = '#099DD9') +
+           xlab(deparse(substitute(variable)))
+  return(plot)
+}
+
+# Build a matrix of small histograms with 3 columns
+# using customly defined draw_hist() function
+grid.arrange(draw_hist(ww, ww$fixed.acidity),
+             draw_hist(ww, ww$volatile.acidity),
+             draw_hist(ww, ww$citric.acid),
+             draw_hist(ww, ww$residual.sugar),
+             draw_hist(ww, ww$chlorides),
+             draw_hist(ww, ww$free.sulfur.dioxide),
+             draw_hist(ww, ww$total.sulfur.dioxide),
+             draw_hist(ww, ww$density),
+             draw_hist(ww, ww$pH),
+             draw_hist(ww, ww$sulphates),
+             draw_hist(ww, ww$alcohol),
+             draw_hist(ww, ww$quality),
+             ncol = 3)
+            
+```           
+
+```{r}
+# Plot a histogram of quality values
+ggplot(data = ww, aes(x = quality)) +
+  geom_histogram(color = 'black', fill = '#099DD9', binwidth = 1) +
+  # Used to show 0-10 range, even if there are no values close to 0 or 10
+  scale_x_continuous(limits = c(0, 10), breaks = seq(0, 10, 1)) +
+  xlab('Quality of Red Wine') +
+  ylab('Number of Red Wines')
+  
+```
+
+````{r}
+# Set boundaries for intervals
+breaks <- c(0, 5, 7, 10)
+
+# Bucket data points into intervals
+ww$quality.category <- cut(ww$quality, breaks, include.lowest = TRUE, right = FALSE)
+
+# Check intervals
+summary(ww$quality.category)
+
+# Add labels to intervals
+labels <- c("Low", "Medium", "High")
+ww$quality.category <- cut(ww$quality, breaks, include.lowest = TRUE, right = FALSE, labels=labels)
+
+# Check if labels are applied properly
+table(ww$quality.category)
+
+```
+
+
+```{r}
+draw_boxplot <- function(dataframe, variable, ylab)
+{
+  plot <- ggplot(data = dataframe, aes(x = quality.category, y = variable, color = quality.category)) + 
+    geom_boxplot() + 
+    xlab('Quality') +
+    #ylab(deparse(substitute(variable))) +
+    ylab(ylab) +
+    theme(legend.position = "none")
+  return(plot)
+}
+
+# Build 4 boxplots summarizing distributions of 4 selected features
+draw_univ_summary <- function()
+{
+  grid.arrange(draw_boxplot(ww, ww$volatile.acidity, expression(Volatile~Acidity~(g/dm^{3}))),
+             draw_boxplot(ww, ww$citric.acid, expression(Citric~Acid~(g/dm^{3}))),
+             draw_boxplot(ww, ww$sulphates, expression(Sulphates~(g/dm^{3}))),
+             draw_boxplot(ww, ww$alcohol, 'Alcohol (% by Volume)'),
+             ncol = 4,
+             top = 'Features With Biggest Variability by Quality Category')
+}
+
+draw_univ_summary()
+
+
+```
+
+
+```{r}
+# Create a new dataframe and calculate correlations 
+# between ww variables
+wwcor <- cor(ww[c(1:11, 12)])
+# Draw a correlation matrix
+corrplot(wwcor, method = 'square', order = "hclust", 
+         tl.col = "black", tl.cex = 0.8, tl.offset = 1)
+
+```
+
+
+Regession models using binomial
+
+```{r}
+# create categorical variables
+
+ww$category[ww$quality <= 5] <- 0
+ww$category[ww$quality > 5] <- 1
+ww$quality2 <- as.factor(ww$quality)
+
+ww$category <- as.factor(ww$category)
+
+
+head(ww)
+```
+
+
+Split data into Train Test sets
+
+``` {r}
+
+set.seed(3000)
+
+spl = sample.split(ww$category, SplitRatio = 0.7)
+
+wwtrain = subset(ww, spl==TRUE)
+wwtest = subset(ww, spl==FALSE)
+
+head(wwtrain)         
+```
+
+Create model
+
+```{r}
+model_glm <- glm(category ~ . - quality - quality2, data = wwtrain, family=binomial(link = "logit"))
+
+```
+
+Stepwise  model
+
+```{r}
+model_gl <- step(model_glm)
+
+```
+
+```{r}
+head(fitted(model_gl))
+```
+
+```{r}
+head(predict(model_gl))
+```
+
+```{r}
+head(predict(model_gl, type = "response"))
+```
+
+
+Categorize wine
+
+```{r}
+trn_pred <- ifelse(predict(model_gl, type = "response") > 0.5,"Good Wine", "Bad Wine")
+head(trn_pred)
+```
+
+
+Confusion matrix
+
+```{r}
+trn_tab <- table(predicted = trn_pred, actual = wwtrain$category)
+trn_tab
+```
+
+Checking accuracy of the training set.
+
+```{r}
+sum(diag(trn_tab))/length(wwtrain$category)
+
+```
+
+Confusion matrix for the test data.
+
+```{r}
+# Making predictions on the test set.
+tst_pred <- ifelse(predict(model_gl, newdata = wwtest, type = "response") > 0.5, "Good Wine", "Bad Wine")
+tst_tab <- table(predicted = tst_pred, actual = wwtest$category)
+tst_tab
+
+```
+
+
+Checking accuracy for the test data.
+
+```{r}
+sum(diag(tst_tab))/length(wwtest$category)
+```
+
+
+
+         
